@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(imu)
 
+
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -197,3 +198,27 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+set(CMAKE_CXX_FLAGS "-I -Wall -std=gnu++11 -O2 -MD -MP ${CMAKE_CXX_FLAGS}")
+#set(CMAKE_C_FLAGS "-I -Wall -std=gnu++11 -O2 -MD -MP ${CMAKE_C_FLAGS}")
+set(CMAKE_SHARED_LINKED_FLAGS "-lboost_program_options ${CMAKE_SHARED_LINKED_FLAGS}")
+
+#Create Executable
+add_executable(imu src/minimu9-ahrs-ros.cpp)
+
+#Include directory of Boost libraries which are needed by minimu9-ahrs
+set(BOOST_ROOT "/usr/include/boost")
+find_package( Boost COMPONENTS program_options REQUIRED)
+include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
+link_libraries(${Boost_LIBRARIES})
+
+#Add and link libraries included in imu/src/minimu9-ahrs
+add_library(prog_options STATIC src/minimu9-ahrs/prog_options.cpp)
+add_library(minimu9 STATIC src/minimu9-ahrs/minimu9.cpp)
+add_library(i2c_bus STATIC src/minimu9-ahrs/i2c_bus.cpp)
+add_library(lsm303 STATIC src/minimu9-ahrs/lsm303.cpp)
+add_library(lis3mdl STATIC src/minimu9-ahrs/lis3mdl.cpp)
+add_library(l3g STATIC src/minimu9-ahrs/l3g.cpp)
+add_library(lsm6 STATIC src/minimu9-ahrs/lsm6.cpp)
+target_link_libraries(imu prog_options minimu9 i2c_bus lsm303 lis3mdl l3g lsm6 ${catkin_LIBRARIES} ${Boost_LIBRARIES} )
+
+
