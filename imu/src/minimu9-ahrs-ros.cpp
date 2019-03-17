@@ -78,7 +78,7 @@ void stream_raw_values(imu & imu)
 
   //Publisher Initialization
   ros::Publisher chatter_pub = n.advertise<std_msgs::String>("imu/raw", 1000);
-  ros::Rate loop_rate(10);  
+  ros::Rate loop_rate(10);   
 
   imu.enable();
 	
