@@ -21,6 +21,7 @@
 // Include ROS files
 #include "ros/ros.h"
 #include "std_msgs/String.h"
+#include "geometry_msgs/Vector3.h"
 #include <sstream>
 
 
@@ -73,37 +74,46 @@ void output_euler(quaternion & rotation)
 
 void stream_raw_values(imu & imu)
 {
+  ROS_INFO("Entering RAW mode");	
+
   //Declare node handler
   ros::NodeHandle n;
 
-  //Publisher Initialization
-  ros::Publisher chatter_pub = n.advertise<std_msgs::String>("imu/raw", 1000);
-  ros::Rate loop_rate(10);   
+  //Publisher Initialization of Magnetometer, Gyroscope and Accelerometer
+  ros::Publisher mag_pub = n.advertise<geometry_msgs::Vector3>("imu/raw/magnetometer", 1000);
+  ros::Publisher gyro_pub = n.advertise<geometry_msgs::Vector3>("imu/raw/gyroscope", 1000);
+  ros::Publisher accel_pub = n.advertise<geometry_msgs::Vector3>("imu/raw/accelerometer", 1000);
+
+  ros::Rate loop_rate(20);   
 
   imu.enable();
 	
-
-
-  //test string
-  std_msgs::String msg;
-  std::stringstream ss;
+  //data handlers
+  geometry_msgs::Vector3 mag;
+  geometry_msgs::Vector3 gyro;
+  geometry_msgs::Vector3 accel;
   
   
-
   while(ros::ok())
   {
     imu.read_raw();
 	//print raw data
-    printf("%7d %7d %7d  %7d %7d %7d  %7d %7d %7d\n",
+    /*printf("%7d %7d %7d  %7d %7d %7d  %7d %7d %7d\n",
            imu.m[0], imu.m[1], imu.m[2],
            imu.a[0], imu.a[1], imu.a[2],
            imu.g[0], imu.g[1], imu.g[2]
-      );
+      );*/
     //get msg data
-	ss<<" "<<imu.m[0]<<" "<<imu.m[1]<<" "<<imu.m[2]<<" "<<imu.a[0]<<" "<<imu.a[1]<<" "<<imu.a[2]<<" "<<imu.g[0]<<" "<<imu.g[1]<<" "<<imu.g[2]<<std::endl;
-	msg.data = ss.str();
-	//publish msg
-	chatter_pub.publish(msg);
+	mag.x   = imu.m[0]; mag.y   = imu.m[1]; mag.z   = imu.m[2];
+	gyro.x  = imu.g[0]; gyro.y  = imu.g[1]; gyro.z  = imu.g[2];
+	accel.x = imu.a[0]; accel.y = imu.a[1]; accel.z = imu.a[2];
+	//mag    =  geometry_msgs::Vector3(imu.m[0],imu.m[1],imu.m[2]);
+    //gyro   =  geometry_msgs::Vector3(imu.g[0],imu.g[1],imu.g[2]);
+    //accel  =  geometry_msgs::Vector3(imu.a[0],imu.a[1],imu.a[2]);
+	//publish data
+	mag_pub.publish(mag);
+	gyro_pub.publish(gyro);
+	accel_pub.publish(accel);
 	//spin & loop
 	ros::spinOnce();
 	loop_rate.sleep();
@@ -321,6 +331,7 @@ int main(int argc, char ** argv)
   try
   {
 	//Initialize ROS node
+	ROS_INFO("Initializing node");
 	ros::init(argc, argv, "imu");
     main_with_exceptions(argc, argv);
   }
