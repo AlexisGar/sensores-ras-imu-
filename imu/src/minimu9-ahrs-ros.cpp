@@ -22,6 +22,7 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 #include "geometry_msgs/Vector3.h"
+#include "sensor_msgs/Imu.h"
 #include <sstream>
 
 
@@ -198,6 +199,21 @@ void fuse_default(quaternion & rotation, float dt, const vector & angular_veloci
 
 void ahrs(imu & imu, fuse_function * fuse, rotation_output_function * output)
 {
+
+  ROS_INFO("Entering NORMAL mode"); 
+
+  //Declare node handler
+  ros::NodeHandle n;
+
+  //Declare ROS Publisher
+  ros::Publisher imu_pub = n.advertise<sensor_msgs::Imu>("imu/imu",1000);
+
+  //Set ROS Rate (20 Hz)
+  ros::Rate loop_rate(20);
+
+  //data handlers
+  sensor_msgs::Imu Imu;
+
   imu.load_calibration();
   imu.enable();
   imu.measure_offsets();
@@ -211,7 +227,7 @@ void ahrs(imu & imu, fuse_function * fuse, rotation_output_function * output)
   loop_pacer.set_period_ns(20000000);
 
   auto start = std::chrono::steady_clock::now();
-  while(1)
+  while(ros::ok())
   {
     auto last_start = start;
     start = std::chrono::steady_clock::now();
@@ -225,8 +241,41 @@ void ahrs(imu & imu, fuse_function * fuse, rotation_output_function * output)
 
     fuse(rotation, dt, angular_velocity, acceleration, magnetic_field);
 
-    output(rotation);
-    std::cout << "  " << acceleration << "  " << magnetic_field << std::endl;
+    //output(rotation);
+    //std::cout << "  " << acceleration << "  " << magnetic_field << std::endl;
+    //std::cout << std::endl;
+    
+    //Load time stamp
+    //Get NOW
+    ros::Time now = ros::Time::now();
+    double secs = now.toSec();
+    Imu.header.stamp.sec  = secs;
+    double nsecs = (secs-(double)(Imu.header.stamp.sec))*1e9;
+    Imu.header.stamp.nsec = nsecs;
+
+    //Load frame id
+    Imu.header.frame_id = "map";
+
+    //Load rotation as a quaternion
+    Imu.orientation.w = rotation.w();
+    Imu.orientation.z = rotation.z();
+    Imu.orientation.y = rotation.y();
+    Imu.orientation.x = rotation.x();
+
+    //Load acceleration
+    Imu.linear_acceleration.x = acceleration.x();
+    Imu.linear_acceleration.y = acceleration.y();
+    Imu.linear_acceleration.z = acceleration.z();
+
+    //Load angular velocity
+    Imu.angular_velocity.x = angular_velocity.x();
+    Imu.angular_velocity.y = angular_velocity.y();
+    Imu.angular_velocity.z = angular_velocity.z();
+    
+    //Publish msg
+    imu_pub.publish(Imu);
+    //Ros Spin
+    ros::spinOnce();
 
     loop_pacer.pace();
   }
