@@ -24,7 +24,7 @@
 #include "geometry_msgs/Vector3.h"
 #include "sensor_msgs/Imu.h"
 #include <sstream>
-
+#include "tf/transform_broadcaster.h"
 
 
 // TODO: print warning if accelerometer magnitude is not close to 1 when starting up
@@ -226,6 +226,10 @@ void ahrs(imu & imu, fuse_function * fuse, rotation_output_function * output)
   pacer loop_pacer;
   loop_pacer.set_period_ns(20000000);
 
+  //Declare static tf
+  tf::TransformBroadcaster br;
+  tf::Transform transform;
+
   auto start = std::chrono::steady_clock::now();
   while(ros::ok())
   {
@@ -240,9 +244,9 @@ void ahrs(imu & imu, fuse_function * fuse, rotation_output_function * output)
     vector magnetic_field = imu.read_mag();
 
     fuse(rotation, dt, angular_velocity, acceleration, magnetic_field);
-
-    //output(rotation);
-    //std::cout << "  " << acceleration << "  " << magnetic_field << std::endl;
+    ///DEBUG AREA
+    //output_euler(rotation);
+    //std::cout << magnetic_field << std::endl;
     //std::cout << std::endl;
     
     //Load time stamp
@@ -272,6 +276,11 @@ void ahrs(imu & imu, fuse_function * fuse, rotation_output_function * output)
     Imu.angular_velocity.y = angular_velocity.y();
     Imu.angular_velocity.z = angular_velocity.z();
     
+    //tf transform broadcaster
+    transform.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+    transform.setRotation( tf::Quaternion( rotation.x(), rotation.y(), rotation.z(), rotation.w() ) );
+    br.sendTransform( tf::StampedTransform(transform, ros::Time::now(), "map", "imu") );
+
     //Publish msg
     imu_pub.publish(Imu);
     //Ros Spin

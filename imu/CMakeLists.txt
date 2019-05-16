@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  tf
 )
 
 ## System dependencies are found with CMake's conventions
@@ -220,5 +221,4 @@ add_library(lis3mdl STATIC src/minimu9-ahrs/lis3mdl.cpp)
 add_library(l3g STATIC src/minimu9-ahrs/l3g.cpp)
 add_library(lsm6 STATIC src/minimu9-ahrs/lsm6.cpp)
 target_link_libraries(imu prog_options minimu9 i2c_bus lsm303 lis3mdl l3g lsm6 ${catkin_LIBRARIES} ${Boost_LIBRARIES} )
-
 
